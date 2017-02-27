@@ -21,7 +21,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         fragmentManager.beginTransaction()
-                .replace(R.id.root_frag_container, mRecentPhotosFragment, RecentPhotosFragment.TAG).commit();
+                .replace(R.id.root_fragment_container, mRecentPhotosFragment, RecentPhotosFragment.TAG).commit();
     }
 
 

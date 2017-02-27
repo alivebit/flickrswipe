@@ -4,14 +4,8 @@
     android:layout_height="match_parent"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!--<android.support.v7.widget.RecyclerView-->
-        <!--android:id="@+id/searchList"-->
-        <!--android:layout_below="@+id/keyWordView"-->
-        <!--android:layout_width="match_parent"-->
-        <!--android:layout_height="match_parent" />-->
-
     <ImageView
-        android:id="@+id/m_search_image"
+        android:id="@+id/recent_image"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:gravity="center"/>
@@ -35,6 +29,6 @@
         android:layout_gravity="center"
         android:gravity="center"
         android:visibility="gone"
-        tools:text="No issues available. Check back later!" />
+        tools:text="No photos available. Check back later!" />
 
 </RelativeLayout>

@@ -11,7 +11,7 @@
     tools:context="me.android.flickrswipe.MainActivity">
 
     <FrameLayout
-        android:id="@+id/root_frag_container"
+        android:id="@+id/root_fragment_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 </RelativeLayout>

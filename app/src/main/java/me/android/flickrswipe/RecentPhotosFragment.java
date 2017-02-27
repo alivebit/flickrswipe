@@ -48,9 +48,9 @@ public class RecentPhotosFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        final View layout = inflater.inflate(R.layout.recent_list, container, false);
+        final View layout = inflater.inflate(R.layout.recent_photos, container, false);
         mProgressBar = (ProgressBar) layout.findViewById(R.id.progressBar);
-        mImageView = (ImageView) layout.findViewById(R.id.m_search_image);
+        mImageView = (ImageView) layout.findViewById(R.id.recent_image);
         return layout;
     }
 
