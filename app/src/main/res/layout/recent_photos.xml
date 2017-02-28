@@ -4,6 +4,8 @@
     android:layout_height="match_parent"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <include layout="@layout/no_connection_layout"/>
+
     <ImageView
         android:id="@+id/recent_image"
         android:layout_width="match_parent"

@@ -1,5 +1,8 @@
 package me.android.flickrswipe;
 
+import android.content.BroadcastReceiver;
+import android.content.IntentFilter;
+import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -8,8 +11,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
-import android.widget.Toast;
+import android.widget.TextView;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -25,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.android.flickrswipe.model.Photo;
+import me.android.flickrswipe.receiver.NetworkStateReceiver;
 import me.android.flickrswipe.rest.ApiClient;
 import me.android.flickrswipe.rest.ApiInterface;
 import okhttp3.ResponseBody;
@@ -32,18 +37,20 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class RecentPhotosFragment extends Fragment {
+public class RecentPhotosFragment extends Fragment implements
+        NetworkStateReceiver.NetworkChangeEventListener {
 
     public static final String TAG = RecentPhotosFragment.class.getSimpleName();
     private final static String API_KEY = "930bdc4daade4a690d70d5206b0edf7f";
     private static int LOAD_THRESHOLD = 20; // load more data if you have an inventory of 20 items or less
-
+    private static int mPageCount = 1;
     private ProgressBar mProgressBar;
     private ImageView mImageView;
+    private TextView mEmptyView;
+    private LinearLayout mNetworkBanner;
+    private BroadcastReceiver mNetworkStateReceiver;
     private List<Photo> mPhotoList = new ArrayList<>();
     private Photo mPhotoObject = null;
-    private static int mPageCount = 1;
-
 
     @Nullable
     @Override
@@ -51,6 +58,11 @@ public class RecentPhotosFragment extends Fragment {
         final View layout = inflater.inflate(R.layout.recent_photos, container, false);
         mProgressBar = (ProgressBar) layout.findViewById(R.id.progressBar);
         mImageView = (ImageView) layout.findViewById(R.id.recent_image);
+        mEmptyView = (TextView) layout.findViewById(R.id.emptyView);
+        mNetworkBanner = (LinearLayout) layout.findViewById(R.id.no_connection_parent_layout);
+        mNetworkStateReceiver = new NetworkStateReceiver(this);
+        getActivity().registerReceiver(mNetworkStateReceiver,
+                new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
         return layout;
     }
 
@@ -94,20 +106,17 @@ public class RecentPhotosFragment extends Fragment {
     }
 
     @Override
-    public void onDestroy() {
-        super.onDestroy();
-        // reset data to avoid holding unwanted memory
-        if (mPhotoList != null) {
-            mPhotoList.clear();
-            mPhotoList = null;
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (mNetworkStateReceiver != null) {
+            getActivity().unregisterReceiver(mNetworkStateReceiver);
         }
-        mPhotoObject = null;
-        mPageCount = 1;
     }
 
     private void updateUIWithNextPhoto() {
         if (mPhotoList.size() == 0) {
             Log.d(TAG, "photoList is empty as of now");
+            mEmptyView.setVisibility(View.VISIBLE);
             return;
         }
         mPhotoObject = mPhotoList.get(0);
@@ -146,7 +155,13 @@ public class RecentPhotosFragment extends Fragment {
     }
 
     private void setupImageWithUrl() {
+        if (mPhotoObject == null) {
+            Log.d(TAG, "no image to show");
+            return;
+        }
+        mEmptyView.setVisibility(View.GONE);
         mProgressBar.setVisibility(View.GONE);
+        mImageView.setVisibility(View.VISIBLE);
         String imageUrl = "http://farm" + mPhotoObject.getFarm() + ".static.flickr.com/" + mPhotoObject.getServer() + "/" + mPhotoObject.getId() + "_" + mPhotoObject.getSecret() + ".jpg";
         Picasso.with(getActivity()).load(imageUrl).placeholder(R.drawable.placeholder).fit().into(mImageView);
     }
@@ -182,10 +197,27 @@ public class RecentPhotosFragment extends Fragment {
 
             @Override
             public void onFailure(Call<ResponseBody> call, Throwable t) {
-                Toast.makeText(getActivity(), "Oops! Problem fetching images", Toast.LENGTH_LONG).show();
+                Log.d(TAG, "Oops! Problem fetching images: " + t.getLocalizedMessage());
             }
 
         });
     }
 
+    @Override
+    public void onReceive(boolean isConnected) {
+        if (isConnected) {
+            mNetworkBanner.setVisibility(View.GONE);
+            setupImageWithUrl();
+        } else {
+            // let user know know connectivity issue
+            showNoNetworkBanner();
+        }
+    }
+
+    private void showNoNetworkBanner() {
+        mNetworkBanner.setVisibility(View.VISIBLE);
+        mEmptyView.setVisibility(View.VISIBLE);
+        mProgressBar.setVisibility(View.GONE);
+        mImageView.setVisibility(View.GONE);
+    }
 }
