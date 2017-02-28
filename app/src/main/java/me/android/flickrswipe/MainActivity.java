@@ -18,10 +18,10 @@ public class MainActivity extends AppCompatActivity {
         mRecentPhotosFragment = (RecentPhotosFragment) fragmentManager.findFragmentByTag(RecentPhotosFragment.TAG);
         if (mRecentPhotosFragment == null) {
             mRecentPhotosFragment = new RecentPhotosFragment();
+            fragmentManager.beginTransaction()
+                    .replace(R.id.root_fragment_container, mRecentPhotosFragment, RecentPhotosFragment.TAG).commit();
         }
 
-        fragmentManager.beginTransaction()
-                .replace(R.id.root_fragment_container, mRecentPhotosFragment, RecentPhotosFragment.TAG).commit();
     }
 
 

@@ -14,25 +14,18 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import com.squareup.picasso.Picasso;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.IOException;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
 import me.android.flickrswipe.model.Photo;
+import me.android.flickrswipe.model.RecentPhotoModel;
 import me.android.flickrswipe.receiver.NetworkStateReceiver;
 import me.android.flickrswipe.rest.ApiClient;
 import me.android.flickrswipe.rest.ApiInterface;
-import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -43,7 +36,7 @@ public class RecentPhotosFragment extends Fragment implements
     public static final String TAG = RecentPhotosFragment.class.getSimpleName();
     private final static String API_KEY = "930bdc4daade4a690d70d5206b0edf7f";
     private static int LOAD_THRESHOLD = 20; // load more data if you have an inventory of 20 items or less
-    private static int mPageCount = 1;
+    private int mPageCount = 1;
     private ProgressBar mProgressBar;
     private ImageView mImageView;
     private TextView mEmptyView;
@@ -86,7 +79,6 @@ public class RecentPhotosFragment extends Fragment implements
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         if (savedInstanceState == null) {
-            mPhotoList.clear(); // init list
             mProgressBar.setVisibility(View.VISIBLE);
             // loading data for the first time on app launch or when process is killed
             mPageCount = 1;
@@ -163,40 +155,36 @@ public class RecentPhotosFragment extends Fragment implements
         mProgressBar.setVisibility(View.GONE);
         mImageView.setVisibility(View.VISIBLE);
         String imageUrl = "http://farm" + mPhotoObject.getFarm() + ".static.flickr.com/" + mPhotoObject.getServer() + "/" + mPhotoObject.getId() + "_" + mPhotoObject.getSecret() + ".jpg";
-        Picasso.with(getActivity()).load(imageUrl).placeholder(R.drawable.placeholder).fit().into(mImageView);
+        Picasso.with(getActivity()).load(imageUrl).placeholder(R.drawable.placeholder).into(mImageView);
     }
 
     private void triggerDataSync(int pageCount) {
         ApiInterface apiService =
                 ApiClient.getClient().create(ApiInterface.class);
-        Call<ResponseBody> call = apiService.getSearchResults("flickr.photos.getRecent", "json", API_KEY, 1, pageCount);
-        call.enqueue(new Callback<ResponseBody>() {
+        Call<RecentPhotoModel> call = apiService.getSearchResults("flickr.photos.getRecent", "json", API_KEY, 1, pageCount);
+        call.enqueue(new Callback<RecentPhotoModel>() {
             @Override
-            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                try {
-                    JSONObject jsonObject = new JSONObject(response.body().string());
-                    JSONArray photosArray = jsonObject.getJSONObject("photos").getJSONArray("photo");
-                    Log.d(TAG, "Number of recent photos received: " + photosArray.length());
-                    Type collectionType = new TypeToken<List<Photo>>() {
-                    }.getType();
-                    List<Photo> photoList = new Gson().fromJson(
-                            photosArray.toString(),
-                            collectionType);
-                    if (mPageCount == 1) {
-                        updateUIAndPhotoList(photoList); // first time, so update data and UI
-                    } else {
-                        updatePhotoList(photoList); // update only the data content
-                    }
-
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
+            public void onResponse(Call<RecentPhotoModel> call, Response<RecentPhotoModel> response) {
+                // check if success
+                if (!response.isSuccessful()) {
+                    Log.d(TAG, "Oops! Problem fetching images: ");
+                    return;
                 }
+                // otherwise fetch results
+                List<Photo> photoList = response.body().getPhotos().getPhoto();
+                if (mPageCount == 1) {
+                    updateUIAndPhotoList(photoList); // first time, so update data and UI
+                } else {
+                    updatePhotoList(photoList); // update only the data content
+                }
+
             }
 
             @Override
-            public void onFailure(Call<ResponseBody> call, Throwable t) {
+            public void onFailure(Call<RecentPhotoModel> call, Throwable t) {
+                if (getActivity() != null && !getActivity().isFinishing()) {
+                    Toast.makeText(getActivity(), "Oops! Problem fetching images", Toast.LENGTH_SHORT);
+                }
                 Log.d(TAG, "Oops! Problem fetching images: " + t.getLocalizedMessage());
             }
 
